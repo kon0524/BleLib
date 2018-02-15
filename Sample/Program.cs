@@ -27,8 +27,7 @@ namespace Sample
                 Guid[] chara = device.GetCharacteristicUuids(s);
                 foreach (Guid c in chara)
                 {
-                    byte[] data = device.Read(s, c);
-                    Console.WriteLine($"Characteristic UUID : {c}, {data}");
+                    Console.WriteLine($"Characteristic UUID : {c}");
                 }
             }
 

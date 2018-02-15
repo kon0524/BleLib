@@ -116,13 +116,11 @@ namespace BleLib
         {
             if (_services == null) return null;
             var service = _services.Find(s => s.Uuid == serviceUuid);
-            var task = service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached).AsTask();
-            task.Wait();
-            var result = task.Result;
-            if (result.Status != GattCommunicationStatus.Success) return null;
+            var cresult = service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached).AsTask().Result;
+            if (cresult.Status != GattCommunicationStatus.Success) return null;
 
             List<Guid> cUuids = new List<Guid>();
-            foreach (var c in result.Characteristics)
+            foreach (var c in cresult.Characteristics)
             {
                 cUuids.Add(c.Uuid);
             }
@@ -163,16 +161,19 @@ namespace BleLib
             if (_services == null) return null;
 
             var service = _services.Find(s => s.Uuid == serviceUuid);
-            var ctask = service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached).AsTask();
-            ctask.Wait();
-            if (ctask.Result.Status != GattCommunicationStatus.Success) return null;
+            var cresult = service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached).AsTask().Result;
+            if (cresult.Status != GattCommunicationStatus.Success) return null;
 
-            var characteristic = ctask.Result.Characteristics.First();
-            var rtask = characteristic.ReadValueAsync(BluetoothCacheMode.Uncached).AsTask();
-            rtask.Wait();
-            if (rtask.Result.Status != GattCommunicationStatus.Success) return null;
+            var characteristic = cresult.Characteristics.First();
+            if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Read))
+            {
+                Debug.WriteLine("Read not supported.");
+                return null;
+            }
+            var rresult = characteristic.ReadValueAsync(BluetoothCacheMode.Uncached).AsTask().Result;
+            if (rresult.Status != GattCommunicationStatus.Success) return null;
 
-            return rtask.Result.Value.ToArray();
+            return rresult.Value.ToArray();
         }
 
         /// <summary>
@@ -190,6 +191,11 @@ namespace BleLib
             if (cresult.Status != GattCommunicationStatus.Success) return null;
 
             var characteristic = cresult.Characteristics.First();
+            if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Read))
+            {
+                Debug.WriteLine("Read not supported.");
+                return null;
+            }
             var rresult = await characteristic.ReadValueAsync(BluetoothCacheMode.Uncached);
             if (rresult.Status != GattCommunicationStatus.Success) return null;
 
@@ -208,15 +214,18 @@ namespace BleLib
             if (_services == null) return false;
 
             var service = _services.Find(s => s.Uuid == serviceUuid);
-            var ctask = service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached).AsTask();
-            ctask.Wait();
-            if (ctask.Result.Status != GattCommunicationStatus.Success) return false;
+            var cresult = service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached).AsTask().Result;
+            if (cresult.Status != GattCommunicationStatus.Success) return false;
 
-            var characteristic = ctask.Result.Characteristics.First();
-            var wtask = characteristic.WriteValueAsync(data.AsBuffer()).AsTask();
-            wtask.Wait();
+            var characteristic = cresult.Characteristics.First();
+            if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Write))
+            {
+                Debug.WriteLine("Write not supported.");
+                return false;
+            }
+            var status = characteristic.WriteValueAsync(data.AsBuffer()).AsTask().Result;
 
-            return wtask.Result == GattCommunicationStatus.Success;
+            return status == GattCommunicationStatus.Success;
         }
 
         /// <summary>
@@ -234,6 +243,11 @@ namespace BleLib
             if (cresult.Status != GattCommunicationStatus.Success) return false;
 
             var characteristic = cresult.Characteristics.First();
+            if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Write))
+            {
+                Debug.WriteLine("Write not supported.");
+                return false;
+            }
             var status = await characteristic.WriteValueAsync(data.AsBuffer());
 
             return status == GattCommunicationStatus.Success;
@@ -276,9 +290,21 @@ namespace BleLib
                 {
                     _services.Add(s);
                 }
+
+                _device.GattServicesChanged += _device_GattServicesChanged;
+                _device.ConnectionStatusChanged += _device_ConnectionStatusChanged;
+
                 IsConnected = true;
                 BleEvent(this, new BleEventArgs() { Type = BleEventArgs.BleEventType.Connected });
             }
+        }
+
+        private void _device_ConnectionStatusChanged(BluetoothLEDevice sender, object args)
+        {
+        }
+
+        private void _device_GattServicesChanged(BluetoothLEDevice sender, object args)
+        {
         }
         #endregion
     }
