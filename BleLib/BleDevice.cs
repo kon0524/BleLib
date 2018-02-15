@@ -152,6 +152,35 @@ namespace BleLib
             return cUuids.ToArray();
         }
 
+        /// <summary>
+        /// キャラクタリスティックの値を読み取る
+        /// </summary>
+        /// <param name="serviceUuid"></param>
+        /// <param name="characteristicUuid"></param>
+        /// <returns></returns>
+        public byte[] Read(Guid serviceUuid, Guid characteristicUuid)
+        {
+            if (_services == null) return null;
+
+            var service = _services.Find(s => s.Uuid == serviceUuid);
+            var ctask = service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached).AsTask();
+            ctask.Wait();
+            if (ctask.Result.Status != GattCommunicationStatus.Success) return null;
+
+            var characteristic = ctask.Result.Characteristics.First();
+            var rtask = characteristic.ReadValueAsync(BluetoothCacheMode.Uncached).AsTask();
+            rtask.Wait();
+            if (rtask.Result.Status != GattCommunicationStatus.Success) return null;
+
+            return rtask.Result.Value.ToArray();
+        }
+
+        /// <summary>
+        /// キャラクタリスティックの値を読み取る(非同期)
+        /// </summary>
+        /// <param name="serviceUuid"></param>
+        /// <param name="characteristicUuid"></param>
+        /// <returns></returns>
         public async Task<byte[]> ReadAsync(Guid serviceUuid, Guid characteristicUuid)
         {
             if (_services == null) return null;
@@ -167,17 +196,47 @@ namespace BleLib
             return rresult.Value.ToArray();
         }
 
-        public async void WriteAsync(Guid serviceUuid, Guid characteristicUuid, byte[] data)
+        /// <summary>
+        /// キャラクタリスティックに値を書き込む
+        /// </summary>
+        /// <param name="serviceUuid"></param>
+        /// <param name="characteristicUuid"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public bool Write(Guid serviceUuid, Guid characteristicUuid, byte[] data)
         {
-            if (_services == null) return;
+            if (_services == null) return false;
+
+            var service = _services.Find(s => s.Uuid == serviceUuid);
+            var ctask = service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached).AsTask();
+            ctask.Wait();
+            if (ctask.Result.Status != GattCommunicationStatus.Success) return false;
+
+            var characteristic = ctask.Result.Characteristics.First();
+            var wtask = characteristic.WriteValueAsync(data.AsBuffer()).AsTask();
+            wtask.Wait();
+
+            return wtask.Result == GattCommunicationStatus.Success;
+        }
+
+        /// <summary>
+        /// キャラクタリスティックに値を書き込む(非同期)
+        /// </summary>
+        /// <param name="serviceUuid"></param>
+        /// <param name="characteristicUuid"></param>
+        /// <param name="data"></param>
+        public async Task<bool> WriteAsync(Guid serviceUuid, Guid characteristicUuid, byte[] data)
+        {
+            if (_services == null) return false;
 
             var service = _services.Find(s => s.Uuid == serviceUuid);
             var cresult = await service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached);
-            if (cresult.Status != GattCommunicationStatus.Success) return;
+            if (cresult.Status != GattCommunicationStatus.Success) return false;
 
             var characteristic = cresult.Characteristics.First();
             var status = await characteristic.WriteValueAsync(data.AsBuffer());
-            Debug.WriteLine(status);
+
+            return status == GattCommunicationStatus.Success;
         }
         #endregion
 
