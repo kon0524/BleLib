@@ -78,6 +78,7 @@ namespace BleLib
             {
                 foreach (var s in _services)
                 {
+                    s.Session.Dispose();
                     s.Dispose();
                 }
                 _services = null;
@@ -165,6 +166,24 @@ namespace BleLib
             if (cresult.Status != GattCommunicationStatus.Success) return null;
 
             var characteristic = cresult.Characteristics.First();
+
+            // for debug
+            Console.WriteLine($"AttributeHandle          : {characteristic.AttributeHandle}");
+            Console.WriteLine($"CharacteristicProperties : {characteristic.CharacteristicProperties}");
+            Console.WriteLine($"PresentationFormats Num  : {characteristic.PresentationFormats.Count}");
+            Console.WriteLine($"ProtectionLevel          : {characteristic.ProtectionLevel}");
+            Console.WriteLine($"UserDescription          : {characteristic.UserDescription}");
+
+            var gdresult = characteristic.GetDescriptorsAsync().AsTask().Result;
+            if (gdresult.Status == GattCommunicationStatus.Success)
+            {
+                Console.WriteLine($"Descriptors Num          : {gdresult.Descriptors.Count}");
+            }
+            else
+            {
+                Console.WriteLine($"GetDescriptorsAsync failed.");
+            }
+
             if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Read))
             {
                 Debug.WriteLine("Read not supported.");
@@ -252,7 +271,7 @@ namespace BleLib
 
             return status == GattCommunicationStatus.Success;
         }
-        #endregion
+#endregion
 
         #region Events
         private void _timer_Elapsed(object sender, ElapsedEventArgs e)
