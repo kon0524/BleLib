@@ -70,6 +70,33 @@ namespace BleLib
         }
 
         /// <summary>
+        /// LocalNameを指定して接続する(非同期)
+        /// </summary>
+        /// <param name="localName"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public async Task<bool> ConnectAsync(string localName, int timeout = 10000)
+        {
+            _localName = localName;
+            _timer.Interval = timeout;
+
+            _watcher.Start();
+            _timer.Start();
+
+            await Task.Run(() =>
+            {
+                var timeoutDatetime = DateTime.Now.AddMilliseconds(timeout);
+                while (!IsConnected)
+                {
+                    System.Threading.Thread.Sleep(100);
+                    if (timeoutDatetime < DateTime.Now) break;
+                }
+            });
+
+            return IsConnected;
+        }
+
+        /// <summary>
         /// 切断
         /// </summary>
         public void Disconnect()
