@@ -152,12 +152,12 @@ namespace BleLib
         }
 
         /// <summary>
-        /// キャラクタリスティックの値を読み取る
+        /// キャラクタリスティックを取得する
         /// </summary>
         /// <param name="serviceUuid"></param>
         /// <param name="characteristicUuid"></param>
         /// <returns></returns>
-        public byte[] Read(Guid serviceUuid, Guid characteristicUuid)
+        public GattCharacteristic GetCharacteristic(Guid serviceUuid, Guid characteristicUuid)
         {
             if (_services == null) return null;
 
@@ -165,9 +165,38 @@ namespace BleLib
             var cresult = service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached).AsTask().Result;
             if (cresult.Status != GattCommunicationStatus.Success) return null;
 
-            var characteristic = cresult.Characteristics.First();
+            return cresult.Characteristics.First();
+        }
 
-            // for debug
+        /// <summary>
+        /// キャラクタリスティックを取得する(非同期)
+        /// </summary>
+        /// <param name="serviceUuid"></param>
+        /// <param name="characteristicUuid"></param>
+        /// <returns></returns>
+        public async Task<GattCharacteristic> GetCharacteristicAsync(Guid serviceUuid, Guid characteristicUuid)
+        {
+            if (_services == null) return null;
+
+            var service = _services.Find(s => s.Uuid == serviceUuid);
+            var cresult = await service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached);
+            if (cresult.Status != GattCommunicationStatus.Success) return null;
+
+            return cresult.Characteristics.First();
+        }
+
+        /// <summary>
+        /// キャラクタリスティックの値を読み取る
+        /// </summary>
+        /// <param name="serviceUuid"></param>
+        /// <param name="characteristicUuid"></param>
+        /// <returns></returns>
+        public byte[] Read(Guid serviceUuid, Guid characteristicUuid)
+        {
+            var characteristic = GetCharacteristic(serviceUuid, characteristicUuid);
+            if (characteristic == null) return null;
+
+#if false   // for debug
             Console.WriteLine($"AttributeHandle          : {characteristic.AttributeHandle}");
             Console.WriteLine($"CharacteristicProperties : {characteristic.CharacteristicProperties}");
             Console.WriteLine($"PresentationFormats Num  : {characteristic.PresentationFormats.Count}");
@@ -183,7 +212,7 @@ namespace BleLib
             {
                 Console.WriteLine($"GetDescriptorsAsync failed.");
             }
-
+#endif
             if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Read))
             {
                 Debug.WriteLine("Read not supported.");
@@ -203,13 +232,9 @@ namespace BleLib
         /// <returns></returns>
         public async Task<byte[]> ReadAsync(Guid serviceUuid, Guid characteristicUuid)
         {
-            if (_services == null) return null;
+            var characteristic = await GetCharacteristicAsync(serviceUuid, characteristicUuid);
+            if (characteristic == null) return null;
 
-            var service = _services.Find(s => s.Uuid == serviceUuid);
-            var cresult = await service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached);
-            if (cresult.Status != GattCommunicationStatus.Success) return null;
-
-            var characteristic = cresult.Characteristics.First();
             if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Read))
             {
                 Debug.WriteLine("Read not supported.");
@@ -230,13 +255,9 @@ namespace BleLib
         /// <returns></returns>
         public bool Write(Guid serviceUuid, Guid characteristicUuid, byte[] data)
         {
-            if (_services == null) return false;
+            var characteristic = GetCharacteristic(serviceUuid, characteristicUuid);
+            if (characteristic == null) return false;
 
-            var service = _services.Find(s => s.Uuid == serviceUuid);
-            var cresult = service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached).AsTask().Result;
-            if (cresult.Status != GattCommunicationStatus.Success) return false;
-
-            var characteristic = cresult.Characteristics.First();
             if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Write))
             {
                 Debug.WriteLine("Write not supported.");
@@ -255,13 +276,9 @@ namespace BleLib
         /// <param name="data"></param>
         public async Task<bool> WriteAsync(Guid serviceUuid, Guid characteristicUuid, byte[] data)
         {
-            if (_services == null) return false;
+            var characteristic = await GetCharacteristicAsync(serviceUuid, characteristicUuid);
+            if (characteristic == null) return false;
 
-            var service = _services.Find(s => s.Uuid == serviceUuid);
-            var cresult = await service.GetCharacteristicsForUuidAsync(characteristicUuid, BluetoothCacheMode.Uncached);
-            if (cresult.Status != GattCommunicationStatus.Success) return false;
-
-            var characteristic = cresult.Characteristics.First();
             if (!characteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Write))
             {
                 Debug.WriteLine("Write not supported.");
