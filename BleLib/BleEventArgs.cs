@@ -8,9 +8,26 @@ namespace BleLib
             Connected,
             Disconnected,
             Timeout,
-            Error
+            Error,
+            LocalName
         }
 
-        public BleEventType Type { get; set; }
+        public BleEventType Type { get; private set; }
+
+        /// <summary>
+        /// LocalName (When Type is LocalName)
+        /// </summary>
+        public string LocalName { get; private set; }
+
+        public BleEventArgs(BleEventType type)
+        {
+            Type = type;
+        }
+
+        public BleEventArgs(string localName)
+        {
+            Type = BleEventType.LocalName;
+            LocalName = localName;
+        }
     }
 }

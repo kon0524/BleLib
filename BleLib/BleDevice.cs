@@ -85,6 +85,8 @@ namespace BleLib
             }
             if (_device != null)
             {
+                _device.ConnectionStatusChanged -= _device_ConnectionStatusChanged;
+                _device.GattServicesChanged -= _device_GattServicesChanged;
                 _device.Dispose();
                 _device = null;
             }
@@ -295,12 +297,17 @@ namespace BleLib
         {
             _timer.Stop();
             _watcher.Stop();
-            BleEvent(this, new BleEventArgs() { Type = BleEventArgs.BleEventType.Timeout });
+            BleEvent(this, new BleEventArgs(BleEventArgs.BleEventType.Timeout));
         }
 
         private async void _watcher_Received(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
         {
             Debug.WriteLine($"LocalName : {args.Advertisement.LocalName}");
+            if (!string.IsNullOrEmpty(args.Advertisement.LocalName))
+            {
+                BleEvent(this, new BleEventArgs(args.Advertisement.LocalName));
+            }
+
             if (!string.IsNullOrEmpty(_localName) && (_localName == args.Advertisement.LocalName))
             {
                 _timer.Stop();
@@ -309,7 +316,7 @@ namespace BleLib
                 _device = await BluetoothLEDevice.FromBluetoothAddressAsync(args.BluetoothAddress);
                 if (_device == null)
                 {
-                    BleEvent(this, new BleEventArgs() { Type = BleEventArgs.BleEventType.Error });
+                    BleEvent(this, new BleEventArgs(BleEventArgs.BleEventType.Error));
                     return;
                 }
 
@@ -317,7 +324,7 @@ namespace BleLib
                 if (result.Status != GattCommunicationStatus.Success)
                 {
                     Disconnect();
-                    BleEvent(this, new BleEventArgs() { Type = BleEventArgs.BleEventType.Error });
+                    BleEvent(this, new BleEventArgs(BleEventArgs.BleEventType.Error));
                     return;
                 }
 
@@ -331,7 +338,7 @@ namespace BleLib
                 _device.ConnectionStatusChanged += _device_ConnectionStatusChanged;
 
                 IsConnected = true;
-                BleEvent(this, new BleEventArgs() { Type = BleEventArgs.BleEventType.Connected });
+                BleEvent(this, new BleEventArgs(BleEventArgs.BleEventType.Connected));
             }
         }
 

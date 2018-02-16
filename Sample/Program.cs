@@ -61,7 +61,7 @@ namespace Sample
 
         private static void Device_BleEvent(object sender, BleLib.BleEventArgs e)
         {
-            Console.WriteLine($"BleEvent Received. type:{e.Type}");
+            Console.WriteLine($"BleEvent Received. type:{e.Type}, localName:{e.LocalName}");
         }
     }
 }
