@@ -5,9 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Sample2"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="MainWindow" Height="350" Width="300">
     <DockPanel>
         <Button DockPanel.Dock="Top" Content="Scan" Click="Button_Click" />
-        <TextBox Name="textbox" />
+        
+        <DockPanel DockPanel.Dock="Top">
+            <Label DockPanel.Dock="Left" Content="LocalName" />
+            <Button DockPanel.Dock="Right" Content="GetUUID" Click="Button_Click_1" />
+            <TextBox Name="localNameTextbox" />
+        </DockPanel>
+        
+        <TextBox Name="textbox" FontFamily="Consolas" />
     </DockPanel>
 </Window>

@@ -41,7 +41,25 @@ namespace Sample2
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
             this.textbox.Clear();
-            await _device.ConnectAsync("");
+            await _device.ConnectAsync("", 5000);
+        }
+
+        private async void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            bool ret = await _device.ConnectAsync(this.localNameTextbox.Text);
+            if (!ret) return;
+            this.textbox.Clear();
+            Guid[] services = _device.GetServiceUuids();
+            foreach (var s in services)
+            {
+                Guid[] charas = await _device.GetCharacteristicUuidsAsync(s);
+                this.textbox.Text += $"S:{s} -----" + Environment.NewLine;
+                foreach (var c in charas)
+                {
+                    this.textbox.Text += $"  C:{c}" + Environment.NewLine;
+                }
+            }
+            _device.Disconnect();
         }
     }
 }
